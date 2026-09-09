@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejsdemo-canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejsdemo
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: nodejsdemo
+        track: canary
+    spec:
+      containers:
+      - name: nodejsdemo
+        image: acrvotingapp7f7e43aa.azurecr.io/nodejs-demoapp:latest
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejsdemo-canary
+spec:
+  ports:
+  - port: 80
+    targetPort: 3000
+  selector:
+    app: nodejsdemo
+    track: canary
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nodejsdemo-canary
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "20"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: app.57.162.154.139.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nodejsdemo-canary
+            port:
+              number: 80
